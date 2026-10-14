@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>WorkBuddy 多账号工作台</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#ffffff; --ink:#171a20; --ink2:#59606f; --ink3:#8d95a5;
+    --line:#e5e8ef; --brand:#2f6df6; --brand-d:#1f56d0; --ok:#12a150; --warn:#d98a00; --bad:#e5484d;
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); font-size:14.5px; line-height:1.6;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--brand)}
+  .wrap{max-width:880px;margin:0 auto;padding:20px 16px 64px}
+
+  /* 顶栏 */
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  h1{font-size:19px;margin:0;font-weight:660;letter-spacing:.2px}
+  .grow{flex:1}
+  .pill{
+    display:inline-flex;align-items:center;gap:7px;border-radius:999px;padding:4px 11px;
+    font-size:12.5px;font-weight:600;border:1px solid var(--line);background:#fff;color:var(--ink2)
+  }
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--ink3)}
+  .pill.live{color:#0b7a3c;border-color:#bfe6cd;background:#f0fbf4}
+  .pill.live .dot{background:var(--ok)}
+  .pill.off{color:#8a5300;border-color:#f2ddb4;background:#fff9ec}
+  .pill.off .dot{background:var(--warn)}
+  .sub{color:var(--ink3);font-size:12.5px;margin-top:6px}
+
+  /* 卡片 */
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px;margin-top:14px}
+  .card h2{font-size:14.5px;margin:0;font-weight:660;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card h2 .hint{font-weight:400;color:var(--ink3);font-size:12.5px}
+  .cardhead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+
+  /* 按钮 */
+  button{
+    font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);
+    padding:7px 13px;border-radius:10px;cursor:pointer;font-weight:540;transition:.12s;
+  }
+  button:hover{border-color:#cfd5e0;background:#fafbfd}
+  button:disabled{opacity:.4;cursor:not-allowed}
+  button.pri{background:var(--brand);border-color:var(--brand);color:#fff}
+  button.pri:hover{background:var(--brand-d);border-color:var(--brand-d)}
+  button.ok{background:#f0fbf4;border-color:#bfe6cd;color:#0b7a3c}
+  button.warn{background:#fff9ec;border-color:#f2ddb4;color:#8a5300}
+  button.sm{padding:5px 10px;font-size:12.5px;border-radius:8px}
+  button.big{padding:10px 20px;font-size:14.5px;border-radius:11px;font-weight:600}
+  .row{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+  label.chk{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--ink2);cursor:pointer}
+
+  /* 账号卡 */
+  .acct{border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-top:9px;background:#fff;
+        display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .acct.cur{border-color:#c6d8fd;background:linear-gradient(180deg,#f7faff,#fff)}
+  .acct .info{flex:1;min-width:220px}
+  .acct .acts{display:flex;gap:8px;flex:none}
+  .phone{font-size:17px;font-weight:660;letter-spacing:.3px}
+  .uidsm{font-family:ui-monospace,Consolas,monospace;font-size:11px;color:var(--ink3);word-break:break-all}
+  .meta{font-size:12.5px;color:var(--ink2);line-height:1.7}
+  .tag{font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:#f7f8fa;white-space:nowrap}
+  .tag.blue{border-color:#c6d8fd;background:#eef4ff;color:#1f56d0}
+  .tag.green{border-color:#bfe6cd;background:#f0fbf4;color:#0b7a3c}
+  .tag.amber{border-color:#f2ddb4;background:#fff9ec;color:#8a5300}
+  .tag.gray{color:var(--ink3)}
+  .cr-urgent{color:#c2410c;font-weight:700}
+  .muted{color:var(--ink3)}
+
+  /* 对话共享 */
+  .sharebar{font-size:14px;color:var(--ink2)}
+  .sharebar b{color:var(--ink);font-size:15.5px}
+  .wsline{margin-top:9px;font-size:12.5px;color:var(--ink3);line-height:2}
+  .wstag{display:inline-block;border:1px solid var(--line);background:#f7f8fa;border-radius:8px;
+         padding:2px 9px;margin:0 6px 5px 0;color:var(--ink2)}
+  .wstag b{color:var(--ink)}
+
+  /* 会话状态 */
+  .sess{display:flex;align-items:center;gap:10px;padding:7px 9px;border-bottom:1px solid var(--line);font-size:12.5px}
+  .sess:last-child{border-bottom:none}
+  .sess .t{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sess .s{flex:none;font-size:11.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:#f7f8fa}
+  .sess .s.run{border-color:#c6d8fd;background:#eef4ff;color:#1f56d0}
+  .sess .s.stuck{border-color:#fbd5d5;background:#fef2f2;color:#a51f1f}
+  .sess .s.ok{border-color:#bfe6cd;background:#f0fbf4;color:#0b7a3c}
+
+  /* 提示条 */
+  .note{border-radius:10px;padding:10px 13px;font-size:13px;border:1px solid;line-height:1.65}
+  .note.info{background:#f2f7ff;border-color:#d3e2ff;color:#1a4bb8}
+  .note.warn{background:#fff9ec;border-color:#f2ddb4;color:#8a5300}
+  .note.ok{background:#f0fbf4;border-color:#bfe6cd;color:#0b7a3c}
+  .note.bad{background:#fef2f2;border-color:#fbd5d5;color:#a51f1f}
+  .note b{font-weight:660}
+  .mt{margin-top:10px}
+
+  /* 折叠 */
+  details{margin-top:12px;border:1px solid var(--line);border-radius:var(--radius);background:#fff}
+  summary{cursor:pointer;padding:12px 17px;font-weight:600;font-size:13.5px;list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary:before{content:"\25B8";color:var(--ink3);display:inline-block;margin-right:8px;transition:.15s}
+  details[open] summary:before{transform:rotate(90deg)}
+  .inner{padding:0 17px 15px;border-top:1px solid var(--line);font-size:13px;color:var(--ink2);line-height:1.75}
+  .inner code{background:#f2f4f8;padding:1px 5px;border-radius:5px;font-size:12px;font-family:ui-monospace,Consolas,monospace}
+  .kv{display:grid;grid-template-columns:158px 1fr;gap:4px 12px;font-size:12.5px}
+  .kv div:nth-child(odd){color:var(--ink3)}
+  .kv div:nth-child(even){word-break:break-all}
+  pre{background:#f7f8fb;border:1px solid var(--line);border-radius:9px;padding:10px;overflow:auto;font-size:12px;max-height:260px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:6px}
+  th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+  th{color:var(--ink3);font-weight:600}
+
+  /* toast */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);display:flex;flex-direction:column;gap:8px;z-index:99;align-items:center;pointer-events:none}
+  .tst{background:#252a33;color:#fff;padding:9px 15px;border-radius:9px;font-size:13px;max-width:80vw;box-shadow:0 6px 24px rgba(0,0,0,.18);animation:in .18s ease}
+  .tst.ok{background:#0e7a41} .tst.bad{background:#a51f1f} .tst.warn{background:#8a5300}
+  @keyframes in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  /* 遮罩 */
+  #mask{position:fixed;inset:0;background:rgba(20,24,32,.42);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  #mask.on{display:flex}
+  .dlg{background:#fff;border-radius:14px;max-width:450px;width:100%;padding:20px 22px;box-shadow:0 20px 60px rgba(0,0,0,.25);max-height:86vh;overflow:auto}
+  .dlg h3{margin:0 0 8px;font-size:16px}
+  .dlg p{margin:6px 0;font-size:13.5px;color:var(--ink2);line-height:1.7}
+  .dlg .row{justify-content:flex-end;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>WorkBuddy 多账号工作台</h1>
+    <span class="grow"></span>
+    <span class="pill" id="pillApp"><span class="dot"></span><span>检测中…</span></span>
+    <button class="sm pri" id="btnAddPhone">添加手机号</button>
+    <button class="sm" id="btnRefresh">刷新</button>
+    <button class="sm" id="btnStopHub">停止管理台</button>
+  </header>
+  <div class="sub" id="subLine">正在读取本机状态…</div>
+
+  <!-- ① 账号 -->
+  <div class="card">
+    <div class="cardhead">
+      <h2>本机账号</h2>
+      <span class="hint">无需短信验证码，一键换成另一个手机号</span>
+      <span class="grow"></span>
+      <button class="ok sm" id="btnCheckinAll">全部签到</button>
+      <label class="chk"><input type="checkbox" id="chkAutoCheckin"> 每天自动签到</label>
+    </div>
+    <div id="acctList"></div>
+  </div>
+
+  <!-- ② 对话共享 -->
+  <div class="card">
+    <div class="cardhead">
+      <h2>对话共享</h2>
+      <span class="hint">换个账号登录，也能看到全部对话、接着往下做</span>
+      <span class="grow"></span>
+      <label class="chk"><input type="checkbox" id="chkAutoShare" checked> 新对话自动共享</label>
+    </div>
+    <div class="sharebar" id="shareBar">读取中…</div>
+    <div class="wsline" id="shareWs"></div>
+    <div class="row mt">
+      <button class="pri big" id="btnShareAll">一键全部共享</button>
+      <button class="sm" id="btnSharePanel">按工作区查看</button>
+      <button class="sm warn" id="btnUnshare">撤销上次共享</button>
+    </div>
+    <div class="mt" id="shareNote"></div>
+  </div>
+
+  <!-- ③ 会话状态（折叠） -->
+  <details id="dtSess">
+    <summary>会话状态：对话结束了界面还显示"正在运行"？这里能矫正</summary>
+    <div class="inner">
+      <div class="row">
+        <button class="sm" id="btnSessions">刷新</button>
+        <button class="sm ok" id="btnFixSessions">矫正卡住的会话</button>
+        <label class="chk"><input type="checkbox" id="chkOnlyActive" checked> 只看运行中/卡住</label>
+        <label class="chk"><input type="checkbox" id="chkAutoFix" checked> 自动矫正</label>
+      </div>
+      <div class="note info" style="margin-top:10px">
+        判定规则：状态还是 <code>planning / working</code>，但<b>会话正文文件</b>（<code>projects/&lt;工作区&gt;/&lt;会话id&gt;.jsonl</code>）
+        超过 <b>180 秒</b>没更新，就认为它其实已经结束。真正在跑的轮次会不断刷新正文文件，不会被误判。
+        客户端自己的自愈要等重启后 <b>30 分钟</b>，这里补了一个更快的矫正器；改库前会自动备份。
+      </div>
+      <div id="sessList"></div>
+    </div>
+  </details>
+
+  <!-- ④ 原理（折叠） -->
+  <details id="dtHow">
+    <summary>它是怎么工作的？（原理与限制）</summary>
+    <div class="inner">
+      <p><b>一句话：</b>把本机登录过的几个手机号，拼成"同一台电脑"用 —— 登录身份各自独立（积分各自领），
+        但<b>对话和项目是同一份</b>，所以上个账号积分用完了，换个账号接着跑同一个任务。</p>
+
+      <p><b>1. 免验证码切换：</b>登录时 WorkBuddy 会把"我是谁"落盘成一套文件
+        （加密会话文件 <code>workbuddy-desktop.info</code>、账号快照、Cookies 等）。
+        本工具在你登录过的第一时间把这一整套快照进 <code>保险库/</code>；
+        以后把某一份写回去，启动就是那个账号，<b>不需要短信</b>。</p>
+
+      <p><b>2. 不用登录就能签到：</b>工具箱用 <code>ELECTRON_RUN_AS_NODE</code> 调 WorkBuddy 自带原生绑定
+        <code>loggerGet()</code> 取出本机 at-rest 主密钥（<code>server/wbkey.js</code>），
+        再用纯 Python 复刻官方 AAD 构造与 AES-GCM，解出 <code>accessToken</code>；
+        拿它直接调加油站真实接口 <code>POST /v2/billing/meter/daily-checkin</code>。
+        因为用的是解出来的令牌，<b>WorkBuddy 开着也能给任意账号签到</b>，不必切账号、不必进 App。
+        密钥与令牌只留在本机，不上传任何地方。</p>
+
+      <p><b>3. 对话怎么变成共享的：</b>对话<b>正文</b>本来就存在
+        <code>projects/&lt;工作区&gt;/&lt;会话id&gt;.jsonl</code>，路径里<b>不含账号</b> —— 文件层面一直是共享的。
+        卡人的是另一本"花名册"：<code>workbuddy.db</code> 的 <code>sessions</code> 表给每条对话盖了个章
+        <code>user_id</code>（属于哪个账号），侧边栏只显示盖着"当前账号"章的记录。
+        而客户端这条查询是 <code>(user_id = ? OR user_id = '')</code> ——
+        <b>官方自己留了"不盖章 = 公共"的口子</b>：<code>user_id</code> 为空的对话，
+        每个账号都能看到、能打开、能继续写。</p>
+
+      <p><b>4. 为什么对话还在原来的文件夹：</b>共享只改"归属"这一个字段，
+        <b>不动 <code>cwd</code></b>，所以 "Vibe oding 里的对话" 永远还在 Vibe oding 那个工作区下，
+        换账号不会把它挪到别处。</p>
+
+      <div class="note info" id="limitNote"></div>
+    </div>
+  </details>
+
+  <!-- ⑤ 诊断（折叠） -->
+  <details id="dtDiag">
+    <summary>环境体检 / 诊断</summary>
+    <div class="inner"><div id="diagBox">点开时自动检测…</div></div>
+  </details>
+
+</div>
+
+<div id="toast"></div>
+<div id="mask"><div class="dlg" id="dlg"></div></div>
+
+<script>
+const API = location.origin.startsWith("http") ? "" : "http://127.0.0.1:8770";
+let SWITCHING = false;
+let REFRESHING = false;
+let S = { accounts: [], appRunning: false, log: [], share: {} };
+let CREDITS = {};      // uid -> 积分信息
+let SESS = null;       // 会话状态快照
+let SHARE = null;      // 对话共享完整信息
+
+/* ---------- 小工具 ---------- */
+function $(id){ return document.getElementById(id); }
+function toast(msg, kind, ms){
+  const d = document.createElement("div");
+  d.className = "tst " + (kind || "");
+  d.textContent = msg;
+  $("toast").appendChild(d);
+  setTimeout(() => { d.style.opacity = "0"; d.style.transition = "opacity .3s"; }, (ms || 3200) - 300);
+  setTimeout(() => d.remove(), ms || 3200);
+}
+async function api(path, opts){
+  try{
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), path.includes("switch") ? 25000 : 20000);
+    let r;
+    try { r = await fetch(API + path, Object.assign({headers:{"Content-Type":"application/json"}, signal:controller.signal}, opts||{})); }
+    finally { clearTimeout(timer); }
+    const t = await r.text();
+    try {
+      const value = JSON.parse(t);
+      if(!r.ok && !value.reason) value.reason = r.status === 404
+        ? "后台尚未加载此功能，请重新启动管理台（WorkBuddy 不需要关闭）"
+        : value.error || `接口错误（HTTP ${r.status}）`;
+      return value;
+    } catch(e){ return { ok:false, reason:"响应异常: " + t.slice(0,160) }; }
+  }catch(e){ return { ok:false, reason:"无法连接本地服务，请确认它还在运行" }; }
+}
+function post(path, body){ return api(path, {method:"POST", body: JSON.stringify(body||{})}); }
+function fmtTime(ms){ if(!ms) return "—"; const d=new Date(ms); const p=n=>String(n).padStart(2,"0");
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+function num(v){ if(v==null || v==="") return "—"; const n = Number(v); if(!isFinite(n)) return String(v);
+  return Number.isInteger(n) ? String(n) : String(Math.round(n*10)/10); }
+function busy(btn, on, txt){
+  if(!btn) return;
+  if(on){ btn.dataset._t = btn.textContent; btn.disabled = true; btn.textContent = txt || "处理中…"; }
+  else { btn.disabled = false; if(btn.dataset._t) btn.textContent = btn.dataset._t; }
+}
+function dialog(title, html, buttons){
+  $("dlg").innerHTML = `<h3>${esc(title)}</h3>${html}<div class="row" id="dlgRow"></div>`;
+  const row = $("dlgRow");
+  (buttons||[]).forEach(b => {
+    const el = document.createElement("button");
+    el.textContent = b.text;
+    if(b.cls) el.className = b.cls;
+    el.onclick = () => { $("mask").classList.remove("on"); b.fn && b.fn(); };
+    row.appendChild(el);
+  });
+  $("mask").classList.add("on");
+}
+
+/* ---------- 顶栏 ---------- */
+function renderTop(){
+  const p = $("pillApp");
+  if(S.appRunning){ p.className = "pill off"; p.innerHTML = '<span class="dot"></span><span>WorkBuddy 运行中</span>'; }
+  else { p.className = "pill live"; p.innerHTML = '<span class="dot"></span><span>WorkBuddy 已退出</span>'; }
+  const live = S.liveAccount || {};
+  $("subLine").textContent = live.nickname
+    ? `本机当前登录：${live.nickname}`
+    : "本机未检测到已登录账号，请先在 WorkBuddy 里登录一次";
+  $("limitNote").innerHTML = S.appRunning
+    ? `目前 <b>WorkBuddy 正在运行</b>。收录、签到、对话共享都<b>不受影响</b>，随时可用
+       （数据库是 WAL 模式，改归属是安全的小事务）。<br>
+       已收录认证的账号可<b>保持 WorkBuddy 打开进行切换</b>，只有客户端确认新身份后才显示成功。正在执行的任务建议先等其完成。`
+    : `WorkBuddy 已退出，现在<b>收录最完整</b>（含 Cookies 副本），也是<b>切换账号</b>的最佳时机。`;
+}
+
+/* ---------- 账号列表 ---------- */
+function renderAccounts(){
+  const list = $("acctList");
+  if(!S.accounts.length){
+    list.innerHTML = `<div class="note info">还没有账号。请先在 WorkBuddy 里登录一个手机号，回到这里点「刷新」即可自动收录。</div>`;
+    return;
+  }
+  list.innerHTML = S.accounts.map(a => {
+    const tags = [];
+    if(a.isCurrent) tags.push('<span class="tag blue">当前登录</span>');
+    if(a.canCheckin) tags.push('<span class="tag green">可签到</span>');
+    else if(a.collected) tags.push('<span class="tag amber">缺登录态</span>');
+    else tags.push('<span class="tag gray">未收录</span>');
+    if(a.isLegacy) tags.push('<span class="tag gray">旧身份</span>');
+
+    const tk = (S.tokens||{})[a.uid] || {};
+    const cr = CREDITS[a.uid] || {};
+
+    // 一行摘要：积分 + 到期 + 令牌
+    const bits = [];
+    if(cr.ok && cr.verifiedUid === a.uid){
+      const days = cr.nearestDaysLeft;
+      const urgent = days != null && days <= 7;
+      let b = `剩余 <b class="${urgent?"cr-urgent":""}">${num(cr.totalRemain)}</b> 积分`;
+      if(days != null) b += ` · <span class="${urgent?"cr-urgent":""}">${days} 天后到期</span>`;
+      if(urgent) b += ` <span class="tag amber">建议优先用</span>`;
+      bits.push(b);
+    } else if(cr.reason){
+      bits.push(`积分：<span class="muted">${esc(cr.reason)}</span>`);
+    }
+    if(tk.ok && tk.accessRemainDays != null){
+      const warn = tk.level && tk.level !== "ok";
+      bits.push(`令牌 <span class="${warn?"cr-urgent":"muted"}">${tk.accessRemainDays} 天</span>`);
+    } else if(!a.canCheckin){
+      bits.push(`<span class="muted">在 WorkBuddy 里登录过一次即可自动收录</span>`);
+    }
+
+    return `
+    <div class="acct ${a.isCurrent?"cur":""}">
+      <div class="info">
+        <div class="row" style="gap:8px">
+          <span class="phone">${esc(a.nickname)}</span>
+          ${tags.join("")}
+        </div>
+        ${bits.length?`<div class="meta">${bits.join("　·　")}</div>`:""}
+        <div class="uidsm">${esc(a.uid)}</div>
+        <div class="meta" id="r_${esc(a.uid)}"></div>
+      </div>
+      <div class="acts">
+        <button class="sm ok" data-act="checkin" data-uid="${esc(a.uid)}" ${a.canCheckin?"":"disabled"}>签到</button>
+        <button class="sm pri" data-act="switch" data-uid="${esc(a.uid)}" ${((a.canSwitchLite||a.canSwitchFull) && !a.isCurrent)?"":"disabled"}>切到这里</button>
+        <button class="sm" data-act="more" data-uid="${esc(a.uid)}">…</button>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+/* ---------- 对话共享 ---------- */
+function renderShare(){
+  const sh = S.share || {};
+  const total = sh.total||0, shared = sh.shared||0, priv = sh.private||0;
+  const bar = $("shareBar"), ws = $("shareWs"), note = $("shareNote");
+  if(!total){
+    bar.innerHTML = `<span class="muted">本机还没有对话记录。</span>`;
+    ws.innerHTML = ""; note.innerHTML = "";
+    return;
+  }
+  const badge = priv === 0
+    ? `<span class="tag green">全部账号可见</span>`
+    : `<span class="tag amber">还有 ${priv} 条只有原账号可见</span>`;
+  bar.innerHTML = `共 <b>${total}</b> 条对话　·　已共享 <b>${shared}</b> 条　${badge}`;
+  $("btnShareAll").disabled = (priv === 0);
+
+  const gs = (sh.groups||[]).slice(0,10);
+  ws.innerHTML = `<div class="wsline">对话仍然留在原来的工作区文件夹：` +
+    gs.map(g => `<span class="wstag">${esc(g.label)} <b>${g.total}</b></span>`).join("") +
+    (sh.unsharable ? `<span class="wstag muted">云端会话 ${sh.unsharable} 条（无法共享）</span>` : "") +
+    `</div>`;
+
+  note.innerHTML = priv === 0
+    ? `<div class="note ok">已经全部共享。现在<b>换任何账号登录，都能看到这 ${total} 条对话</b>，直接接着往下做 ——
+        积分不够时换个号继续跑同一个任务即可。</div>`
+    : `<div class="note info">点「一键全部共享」后，这 ${priv} 条对话会对<b>本机所有登录过的账号</b>可见
+        （共享前会自动备份数据库，可随时撤销）。</div>`;
+}
+async function shareAll(){
+  const b = $("btnShareAll"); busy(b, true, "共享中…");
+  const r = await post("/api/share-sessions", {mode:"public", dryRun:false});
+  busy(b, false);
+  if(!r || !r.ok){ toast((r&&r.reason)||"共享失败", "bad", 5200); return; }
+  toast(r.reason || `已共享 ${r.count} 条对话`, "ok", 5200);
+  if(r.snapshotsCleared && r.snapshotsCleared.length){
+    toast("已刷新侧边栏缓存；若 WorkBuddy 正开着，请重启它或重新打开侧边栏看效果", "warn", 6200);
+  }
+  refresh();
+}
+async function unshare(){
+  const r0 = await post("/api/share-sessions", {mode:"restore", dryRun:true});
+  if(!r0 || !r0.ok){ toast((r0&&r0.reason)||"没有可撤销的共享", "warn", 5000); return; }
+  dialog("撤销上次共享",
+    `<p>将把 <b>${r0.count}</b> 条对话的归属还原回<b>它们原本的账号</b>。</p>
+     <p>撤销后，其它账号就看不到这些对话了。撤销前会自动备份数据库。</p>`,
+    [{text:"取消"}, {text:"确认撤销", cls:"warn", fn: async () => {
+      const r = await post("/api/share-sessions", {mode:"restore", dryRun:false});
+      toast(r.ok ? (r.reason || "已撤销") : (r.reason||"撤销失败"), r.ok?"ok":"bad", 5200);
+      refresh();
+    }}]);
+}
+async function sharePanel(){
+  const b = $("btnSharePanel"); busy(b, true, "读取中…");
+  const r = await api("/api/shared");
+  busy(b, false);
+  if(!r || r.error){ toast("读取失败", "bad"); return; }
+  SHARE = r;
+  const rows = (r.sessions||[]).map(s => `<tr>
+      <td>${esc(s.title).slice(0,38)}</td>
+      <td>${esc(s.workspace)}</td>
+      <td>${s.shared?'<span class="tag green">已共享</span>':(s.sharable?`<span class="tag">${esc((s.uid||"").slice(0,8))}</span>`:'<span class="tag gray">云端</span>')}</td>
+    </tr>`).join("");
+  const groups = (r.groups||[]).map(g =>
+    `<tr><td>${esc(g.label)}</td><td>${g.shared} / ${g.total}</td></tr>`).join("");
+  dialog("对话明细",
+    `<p>共 <b>${r.total}</b> 条可共享对话，已共享 <b>${r.shared}</b> 条${r.unsharable?`；另有 ${r.unsharable} 条云端会话无法共享`:""}。</p>
+     <p style="margin-top:10px"><b>按工作区：</b></p>
+     <table><tr><th>工作区</th><th>已共享 / 总数</th></tr>${groups}</table>
+     <p style="margin-top:10px"><b>逐条明细：</b></p>
+     <table><tr><th>对话</th><th>工作区</th><th>归属</th></tr>${rows}</table>`,
+    [{text:"关闭"}]);
+}
+
+/* ---------- 会话状态 ---------- */
+function sessClass(s){
+  if(s.stuck) return "stuck";
+  if(s.display === "运行中") return "run";
+  if(s.display === "已完成") return "ok";
+  return "";
+}
+async function loadSessions(){
+  const r = await api("/api/sessions?limit=120");
+  if(!r || !r.sessions){ $("sessList").innerHTML = `<div class="note bad">读取失败</div>`; return; }
+  SESS = r;
+  const only = $("chkOnlyActive").checked;
+  const rows = (r.sessions||[]).slice().sort((a,b) => {
+    const rank = s => (s.stuck ? 0 : (s.display === "运行中" ? 1 : 2));
+    const ra = rank(a), rb = rank(b);
+    if(ra !== rb) return ra - rb;
+    return (b.bodyMtime||b.lastActivityAt||b.updatedAt||0) - (a.bodyMtime||a.lastActivityAt||a.updatedAt||0);
+  }).filter(s => !only || s.stuck || s.display === "运行中");
+
+  $("sessList").innerHTML =
+    `<div class="note ${r.stuckCount?"warn":"ok"}" style="margin-top:10px">
+       共 ${r.sessions.length} 个会话，运行中 ${r.runningCount} 个${r.stuckCount?`，其中 <b>${r.stuckCount} 个像是卡住了</b>`:"（没有卡住的）"}。
+     </div>` +
+    (rows.length ? rows.slice(0,40).map(s => {
+      const idle = s.idleSeconds == null ? "—" : (s.idleSeconds < 90 ? Math.round(s.idleSeconds) + " 秒"
+        : (s.idleSeconds < 5400 ? Math.round(s.idleSeconds/60) + " 分钟" : (s.idleSeconds/3600).toFixed(1) + " 小时"));
+      return `<div class="sess">
+        <span class="t" title="${esc(s.id)}">${esc(s.title).slice(0,52)}</span>
+        <span class="s">${esc(s.stuck?"疑似卡住":s.display)}</span>
+        <span class="s">${idle}</span>
+      </div>`;
+    }).join("") : `<div class="note info">没有符合筛选条件的会话。</div>`);
+}
+async function fixSessions(dry){
+  const b = $("btnFixSessions"); busy(b, true, dry ? "检测中…" : "矫正中…");
+  const r = await post("/api/fix-sessions", {dryRun: !!dry});
+  busy(b, false);
+  if(!r || !r.ok){ toast((r&&r.reason)||"操作失败", "bad"); return; }
+  if(r.dryRun){
+    if(!r.count){ toast("没有发现卡住的会话，一切正常", "ok", 4500); }
+    else {
+      const rows = r.targets.map(t => `<tr><td>${esc(t.title).slice(0,36)}</td><td>${esc(t.status)}</td><td>${t.idleSeconds==null?"—":Math.round(t.idleSeconds/60)+" 分钟"}</td></tr>`).join("");
+      dialog("发现 " + r.count + " 个卡住的会话", `<p>这些会话状态还是"运行中"，但正文文件很久没更新了：</p>
+        <table><tr><th>会话</th><th>状态</th><th>已静默</th></tr>${rows}</table>
+        <p>矫正后界面就不会再显示"正在运行"。改库前会自动备份。</p>`,
+        [{text:"取消"}, {text:"确认矫正", cls:"ok", fn: () => fixSessions(false)}]);
+    }
+  } else {
+    toast(r.reason || "处理完成", r.count ? "ok" : "warn", 5200);
+    loadSessions();
+  }
+}
+
+/* ---------- 账号动作 ---------- */
+async function checkin(uid, btn){
+  busy(btn, true, "签到中…");
+  const r = await post("/api/checkin", {uid});
+  busy(btn, false);
+  if(r.ok) toast(r.already ? `今天已签到：${r.message||""}` : `签到成功：${r.message||""}`, "ok", 5200);
+  else toast(r.reason || "签到失败", "bad", 6500);
+}
+async function checkinAll(){
+  const b = $("btnCheckinAll"); busy(b, true, "签到中…");
+  const r = await post("/api/checkin-all", {});
+  busy(b, false);
+  if(r && r.results){
+    const okn = r.results.filter(x => x.ok).length;
+    const detail = r.results.map(x => `${x.nickname}：${x.ok?(x.already?"今日已签":"签到成功"):(x.reason||"失败")}`).join("；");
+    toast(`全部签到：成功 ${okn} / ${r.results.length}　${detail}`, okn ? "ok" : "warn", 7000);
+  } else toast("批量签到失败", "bad");
+  refresh();
+}
+async function switchTo(uid, name){
+  const a = S.accounts.find(x => x.uid === uid) || {};
+  if(SWITCHING){ toast("切换正在进行，请稍候", "bad"); return; }
+  const lite = !!a.canSwitchLite;
+  if(S.appRunning && !lite){ toast("该账号缺少认证快照，请先登录并收录；完整快照切换需要退出客户端", "bad", 6000); return; }
+  dialog("切换到 " + name,
+    `<p>${S.appRunning ? "WorkBuddy 保持打开，等待客户端确认新身份。" : "写入目标身份，随后可启动 WorkBuddy。"}</p>
+     <p>现有对话、项目、插件设置不改动。切换前自动备份；未确认成功会尝试恢复原认证。</p>
+     <p>建议先等待正在执行的任务完成，再切换账号。</p>`,
+    [{text:"取消"}, {text:"确认切换", cls:"pri", fn: async () => {
+      if(SWITCHING) return;
+      SWITCHING = true;
+      toast("正在切换并等待客户端确认…", "", 12000);
+      try {
+        const r = await post(lite ? "/api/switch-lite" : "/api/switch", {uid});
+        if(r.ok){
+          toast(r.reason || "切换完成", "ok", 6500);
+          if(r.mode !== "hot") dialog("身份已写入", `<p>启动 WorkBuddy 后检查目标账号。</p>`,
+            [{text:"稍后打开"}, {text:"立即启动 WorkBuddy", cls:"pri", fn: launchApp}]);
+        } else toast(r.reason || "切换失败", "bad", 7500);
+      } finally { SWITCHING = false; await refresh(); }
+    }}]);
+}
+
+async function accountMore(uid, name){
+  const a = S.accounts.find(x => x.uid === uid) || {};
+  const c = CREDITS[uid] || {};
+  dialog(name + " · 详情",
+    `<div class="meta">
+       <b>uid：</b>${esc(uid)}<br>
+       <b>来源：</b>${esc(a.source||"—")}<br>
+       <b>收录时间：</b>${a.collectedAt ? fmtTime(a.collectedAt) : "未收录"}<br>
+       <b>能力：</b>签到${a.canCheckin?"✓":"✗"} · 切换${a.canSwitchLite?"✓":"✗"}${a.canSwitchFull?" · 完整切换✓":""}
+     </div>
+     ${c.ok && c.verifiedUid === uid ? `<p style="margin-top:10px"><b>积分资源</b> · 官方当前余额 ${num(c.totalRemain)} · ${fmtTime(c.queriedAt)}</p>
+       <table><tr><th>套餐</th><th>剩余</th><th>到期</th><th>还剩</th></tr>` +
+       (c.packages||[]).map(p => `<tr><td>${esc(p.name||"—")}</td><td>${num(p.remain)}${p.size?` / ${num(p.size)}`:""}</td><td>${p.endAt?fmtTime(p.endAt):"—"}</td><td>${p.daysLeft==null?"—":p.daysLeft+" 天"}</td></tr>`).join("") +
+       `</table>` : ""}`,
+    [{text:"查签到状态", fn: () => statusOf(uid)},
+     {text:"查积分", fn: () => refreshCredits(true)},
+     {text:"重新收录", fn: () => recollect(uid)},
+     {text: a.collected?"移除":"关闭", cls: a.collected?"warn":"", fn: a.collected?(() => forget(uid, name)):undefined},
+     {text:"关闭"}]);
+}
+async function statusOf(uid){
+  const r = await post("/api/status", {uid});
+  if(!r.ok){ toast(r.reason || "查询失败", "bad", 6000); return; }
+  const s = r.status || {};
+  const lines = [
+    `今日：${s.checkedToday?"已签到":"未签到"}`,
+    `今日积分：${s.todayPoints==null?"—":s.todayPoints}`,
+    `连续签到：${s.continuousDays==null?"—":s.continuousDays} 天`,
+    `总积分：${s.totalPoints==null?"—":s.totalPoints}`,
+  ];
+  let week = "";
+  if(Array.isArray(s.weekProgress) && s.weekProgress.length){
+    const names = ["一","二","三","四","五","六","日"];
+    week = `<p style="margin-top:10px"><b>本周：</b>` + s.weekProgress.map((v,i) =>
+      `<span class="tag ${v?"green":""}">${names[i]||""}</span>`).join(" ") + `</p>`;
+  }
+  dialog("签到状态", `<div class="meta">${lines.join("<br>")}</div>${week}
+    ${s.activityName||s.themeName?`<p style="margin-top:8px"><b>活动：</b>${esc([s.activityName,s.themeName].filter(Boolean).join(" · "))}${s.season?`（第 ${s.season} 赛季）`:""}</p>`:""}
+    ${Array.isArray(s.checkinDates)&&s.checkinDates.length?`<p style="margin-top:8px"><b>已签日期：</b>${esc(s.checkinDates.slice(-15).join("、"))}</p>`:""}`,
+    [{text:"关闭"}]);
+}
+async function refreshCredits(force){
+  const r = force ? await post("/api/credits", {force:true}) : await api("/api/credits");
+  if(r && r.credits){
+    CREDITS = {};
+    r.credits.forEach(c => { CREDITS[c.uid] = c; });
+    renderAccounts();
+  }
+}
+async function recollect(uid){
+  const r = await post("/api/collect", {uid});
+  toast(r.ok ? (r.reason || "已重新收录") : (r.reason||"收录失败"), r.ok?"ok":"bad", 5200);
+  refresh();
+}
+async function forget(uid, name){
+  dialog("移除账号", `<p>将从保险库里删除 <b>${esc(name)}</b> 的本地快照（不影响 WorkBuddy 本身，也不影响该账号）。</p>`,
+    [{text:"取消"}, {text:"确认移除", cls:"warn", fn: async () => {
+      const r = await api("/api/account?uid=" + encodeURIComponent(uid), {method:"DELETE", body:"{}"});
+      toast(r.ok ? "已移除" : (r.reason || "移除失败"), r.ok ? "ok" : "bad");
+      refresh();
+    }}]);
+}
+async function launchApp(){
+  const r = await post("/api/launch-app", {});
+  toast(r.ok ? (r.already ? "WorkBuddy 已在运行" : "已启动 WorkBuddy") : (r.reason||"启动失败"), r.ok?"ok":"bad", 4000);
+  setTimeout(refresh, 2500);
+}
+
+/* ---------- 诊断 ---------- */
+async function diagnose(){
+  $("diagBox").textContent = "检测中…";
+  const d = await api("/api/diagnose");
+  if(!d || !d.wbDir){ $("diagBox").textContent = "检测失败"; return; }
+  const rows = [
+    ["~/.workbuddy 目录", d.wbDirExists ? "存在" : "不存在"],
+    ["WorkBuddy 进程", d.appRunning ? "运行中（Cookies 被锁定）" : "已退出"],
+    ["Network/Cookies", d.cookiesExists ? (d.cookiesReadable ? "存在且可读" : "存在但被独占锁定") : "不存在"],
+    ["加密会话文件", d.authFileExists ? "存在（令牌来源）" : "不存在"],
+    ["at-rest 主密钥", d.atRestSecretCached ? "已缓存" : "未缓存（首次会调用 wbkey.js 取一次）"],
+    ["本机当前登录", d.liveAccount ? `${d.liveAccount.nickname} (${d.liveAccount.uid})` : "无"],
+    ["磁盘历史身份", (d.historicalUids||[]).join("、") || "—"],
+    ["保险库目录", d.vaultDir],
+    ["保险库条目", (d.vaultEntries||[]).map(e => `${e.nickname}[会话${e.hasSession?"✓":"✗"} Cookie${e.hasCookies?"✓":"✗"}]`).join("、") || "空"],
+  ];
+  $("diagBox").innerHTML = `<div class="kv">` + rows.map(r => `<div>${esc(r[0])}</div><div>${esc(r[1])}</div>`).join("") + `</div>`;
+}
+
+/* ---------- 刷新 ---------- */
+async function refresh(){
+  if(REFRESHING) return;
+  REFRESHING = true;
+  let s;
+  try { s = await api("/api/state"); } finally { REFRESHING = false; }
+  if(s && s.accounts){ S = s; renderTop(); renderAccounts(); renderShare(); syncSettings(); }
+  else toast(s.reason || "无法连接本地服务", "bad");
+}
+function syncSettings(){
+  const st = S.settings || {};
+  $("chkAutoCheckin").checked = !!st.autoCheckin;
+  $("chkAutoShare").checked = st.autoShare !== false;
+}
+
+/* ---------- 绑定 ---------- */
+$("btnAddPhone").onclick = () => {
+  dialog("添加账号 · 首次短信验证",
+    `<p>输入手机号，通过官方短信验证后保存账号；当前 WorkBuddy 保持打开和登录。</p>
+     <p><input id="loginPhone" type="tel" maxlength="11" placeholder="11 位手机号" autocomplete="tel"></p>
+     <p><button id="sendLoginSms">发送验证码</button></p>
+     <p><input id="loginCode" inputmode="numeric" maxlength="8" placeholder="短信验证码" autocomplete="one-time-code"></p>
+     <p id="loginHint">只有你点击发送才请求短信，验证码不保存。</p>
+     <p><button class="pri" id="verifyLogin">验证并添加账号</button></p>`, [{text:"关闭"}]);
+  $("sendLoginSms").onclick = async () => {
+    const button = $("sendLoginSms"); const phone = $("loginPhone").value.trim();
+    const hint = $("loginHint");
+    busy(button, true, "发送中…");
+    hint.textContent = "正在请求官方短信接口…";
+    const started = Date.now();
+    let r = await post("/api/login/send-sms", {phone});
+    while(r.pending && Date.now()-started < 45000 && hint.isConnected){
+      hint.textContent = `正在等待官方发送结果（${Math.floor((Date.now()-started)/1000)} 秒）…`;
+      await new Promise(resolve => setTimeout(resolve,700));
+      r = await post("/api/login/sms-status", {phone});
+    }
+    if(!hint.isConnected) return;
+    hint.textContent = r.pending ? "官方响应较慢，请留意短信；发送状态仍待确认。" : r.reason || "发送结果待确认";
+    if(!r.ok || r.pending){ busy(button, false); return; }
+    let seconds = r.retryAfter || 60;
+    const countdown = setInterval(() => {
+      if(!button.isConnected){ clearInterval(countdown); return; }
+      button.textContent = `${seconds--} 秒后可重发`;
+      if(seconds < 0){ clearInterval(countdown); busy(button,false); }
+    },1000);
+  };
+  $("verifyLogin").onclick = async () => {
+    const button = $("verifyLogin");
+    busy(button, true, "验证中…");
+    const r = await post("/api/login/verify", {phone:$("loginPhone").value.trim(),code:$("loginCode").value.trim()});
+    const hint = $("loginHint"); if(hint) hint.textContent = r.reason || "请重试";
+    busy(button,false);
+    if(r.ok){ $("mask").classList.remove("on"); toast(r.reason,"ok",6500); refresh(); }
+  };
+};
+$("btnStopHub").onclick = () => dialog("停止管理台", "<p>只停止账号管理服务，WorkBuddy 保持打开。再次双击启动文件可恢复。</p>",
+  [{text:"取消"},{text:"停止",fn:async()=>{const r=await post("/api/service-stop",{});toast(r.reason||"管理台已停止");}}]);
+$("btnRefresh").onclick = refresh;
+$("btnCheckinAll").onclick = checkinAll;
+$("btnShareAll").onclick = shareAll;
+$("btnUnshare").onclick = unshare;
+$("btnSharePanel").onclick = sharePanel;
+$("chkAutoCheckin").onchange = async (e) => { await post("/api/settings", {autoCheckin: e.target.checked}); toast(e.target.checked?"已开启每天自动签到":"已关闭每天自动签到"); };
+$("chkAutoShare").onchange = async (e) => { await post("/api/settings", {autoShare: e.target.checked}); toast(e.target.checked?"已开启新对话自动共享":"已关闭新对话自动共享"); };
+$("chkAutoFix").onchange = async (e) => { await post("/api/settings", {autoFixSessions: e.target.checked}); toast(e.target.checked?"已开启自动矫正":"已关闭自动矫正"); };
+$("btnSessions").onclick = loadSessions;
+$("chkOnlyActive").onchange = loadSessions;
+$("btnFixSessions").onclick = () => fixSessions(true);
+$("mask").onclick = (e) => { if(e.target.id === "mask") $("mask").classList.remove("on"); };
+$("dtSess").addEventListener("toggle", function(){ if(this.open) loadSessions(); });
+$("dtDiag").addEventListener("toggle", function(){ if(this.open) diagnose(); });
+
+$("acctList").addEventListener("click", (ev) => {
+  const btn = ev.target.closest("button[data-act]");
+  if(!btn) return;
+  const uid = btn.dataset.uid;
+  const a = S.accounts.find(x => x.uid === uid) || {};
+  if(btn.dataset.act === "checkin") checkin(uid, btn);
+  else if(btn.dataset.act === "switch") switchTo(uid, a.nickname);
+  else if(btn.dataset.act === "more") accountMore(uid, a.nickname);
+});
+
+/* ---------- 启动 ---------- */
+refresh();
+refreshCredits(false);
+setInterval(refresh, 12000);
+setInterval(() => refreshCredits(false), 5 * 60 * 1000);
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Account data and device keys must never be committed.
+保险库/
+运行日志/
+旧版归档/
+_asar/
+*.db
+*.db-wal
+*.db-shm
+*.zip
+*.log
+.env
+.env.*
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.spec
